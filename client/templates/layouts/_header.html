@@ -10,7 +10,8 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="{{pathFor 'home'}}">Project Title</a>
+        <a class="navbar-brand" href="{{pathFor 'home'}}"><i class="fa fa-area-chart"></i> Daintree-DSM</a>
+        {{> connectStatus}}
       </div>
 
       <div class="collapse navbar-collapse" id="main-nav">
@@ -18,7 +19,7 @@
           <ul class="nav navbar-nav navbar-right">
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                <i class="fa fa-user"></i> {{ currentUser.profile.name }} <i class="fa fa-caret-down"></i>
+                <i class="fa fa-user"></i> {{ currentUser.username }} <i class="fa fa-caret-down"></i>
               </a>
               <ul class="dropdown-menu" role="menu">
                 <li><a href="#" data-action="logout"><i class="fa fa-lock"></i> Sign Out</a></li>
@@ -28,13 +29,13 @@
         {{else}}
           <div class="navbar-right">
             <a href="{{ pathFor 'atSignIn' }}" class="btn btn-default navbar-btn">Sign in</a>
-            <a href="{{ pathFor 'atSignUp' }}" class="btn btn-primary navbar-btn">Register</a>
           </div>
         {{/if}}
 
         <ul class="nav navbar-nav navbar-right">
-          <li class="{{ isActiveRoute regex='home' }}"><a href="{{ pathFor 'home' }}"><i class="fa fa-home"></i> Home</a></li>
-          <li class="{{ isActiveRoute regex='dashboard' }}"><a href="{{ pathFor 'dashboard' }}"><i class="fa fa-gear"></i> Dashboard</a></li>
+          <li class="{{ showHide }} {{ isActiveRoute regex='dashboard' }} ">
+            <a href="{{ pathFor 'dashboard' }}"><i class="fa fa-gear"></i> Dashboard</a>
+          </li>
         </ul>
       </div>
 

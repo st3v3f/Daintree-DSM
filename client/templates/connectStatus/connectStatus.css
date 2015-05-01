@@ -1,0 +1,10 @@
+
+i.connected {
+    color: green;
+    //font-size: 1.5em;
+}
+
+i.disconnected {
+    color: red;
+    //font-size: 1.5em;
+}
