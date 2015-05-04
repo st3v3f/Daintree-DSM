@@ -1,30 +1,67 @@
-Template.tsgraph.rendered = function() {
 
-  // Grab SVG width.
-  console.log("SVG Width = " + this.$('svg').width());
-  this.data.initialSVGWidth = this.$('svg').width();
+// Just does animated transition from 1st data set to 2nd data set immediately.
 
-  var svg = d3.select("#myD3");
-  this.data.svg = svg;
+Template.tsgraph2.rendered = function() {
+
+  startDrawing();
+
 };
 
-Template.tsgraph.helpers({
-  pathData: function() {
-    return "M0,96.25Q18,56.375,22.5,55C29.25,52.9375,38.25,90.75,45,82.5S60.75,-2.0625000000000004,67.5,0S83.25,84.997,90,96.25S105.75,81.013625,112.5,75.02S128.25,60.72274999999999,135,56.29249999999999S150.75,47.233999999999995,157.5,45.485S173.25,39.216375000000006,180,44.63250000000001S195.75,81.3285,202.5,81.5925S218.25,50.03075,225,46.3925S240.75,53.294999999999995,247.5,57.3375S263.25,69.564,270,73.3425S285.75,77.033,292.5,82.5275S308.25,107.023125,315,109.9725S330.75,105.33325,337.5,102.19000000000001S342.00036,100.09436360000001,360,89.0175Q364.5,84.47449999999999,382.5,56.760000000000005";
-  },
+Template.tsgraph2.helpers({
 
-  pathDynData: function() {
-    return ""; //getData(Template.parentData().graphData,{width:600,height:250});
-  },
-
-  winWidth: function() {return (Session.get('winResize') && Session.get('winResize').width) || 0},
-
-  hello: function() { return "hello"; },
-
-  svgWidth: function() { console.log(this);return this.initialSVGWidth;},
-
-  doUpdates: function(){ return doUpdates(this.svg);}
 });
+
+function startDrawing() {
+  var data = [
+    { x : 50, y : 50},
+    { x : 100, y : 40},
+    { x : 150, y : 100}
+  ];
+
+  var container = d3.select("#myD3");
+
+  var svg = container.append("svg")
+    .attr("width", 200)
+    .attr("height", 200);
+
+  var d3line = d3.svg.line()
+    .x(function(d){return d.x;})
+    .y(function(d){return d.y;})
+    .interpolate("cardinal");
+
+  var path = svg.append("path")
+    .attr("d", d3line(data))
+    .style("stroke-width", 2)
+    .style("stroke", "blue")
+    .style("fill", "none");
+
+  data = [
+    { x : 50, y : 80},
+    { x : 100, y : 60},
+    { x : 150, y : 150},
+    { x : 200, y : 30}
+  ];
+
+  path.transition()
+    .duration(5000)
+    .ease("linear")
+    .attr("d", d3line(data));
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function doUpdates(svg){
 

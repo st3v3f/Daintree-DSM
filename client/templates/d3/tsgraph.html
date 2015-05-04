@@ -1,7 +1,14 @@
 <template name="tsgraph">
   <p> Window width = {{winWidth}} </p>
-  
-<svg width="600" height="250">
+  <p> SVG width = {{initialSVGWidth}}  </p>
+
+  <div class="d3">
+    <svg  width="600" height="250">
+      </svg>
+  </div>
+
+
+<svg id="myD3" width="600" height="250">
   <g transform="translate(40,80)">
     <g class="x axis" transform="translate(0,110)">
       <g class="tick" transform="translate(0,0)" style="opacity: 1;">
@@ -81,9 +88,14 @@
       </g>
       <path class="domain" d="M0,0H0V110H0"></path>
     </g>
-    <path class="line" stroke="steelblue" stroke-width="2" fill="none" d={{pathDynData}}></path>
+    <path class="line" stroke="steelblue" stroke-width="2" fill="none" d={{pathData}}></path>
     <g class="x axis" transform="translate(0,110)"></g>
     <g class="y axis" transform="translate(0,0)"></g>
   </g>
 </svg>
+  <div class="hidden">{{doUpdates}}</div>
+
+
+
+
 </template>
