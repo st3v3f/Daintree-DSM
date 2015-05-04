@@ -1,0 +1,89 @@
+<template name="tsgraph">
+  <p> Window width = {{winWidth}} </p>
+  
+<svg width="600" height="250">
+  <g transform="translate(40,80)">
+    <g class="x axis" transform="translate(0,110)">
+      <g class="tick" transform="translate(0,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">00:00</text>
+      </g>
+      <g class="tick" transform="translate(67.5,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">03:00</text>
+      </g>
+      <g class="tick" transform="translate(135,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">06:00</text>
+      </g>
+      <g class="tick" transform="translate(202.5,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">09:00</text>
+      </g>
+      <g class="tick" transform="translate(270,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">12:00</text>
+      </g>
+      <g class="tick" transform="translate(337.5,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">15:00</text>
+      </g>
+      <g class="tick" transform="translate(405,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">18:00</text>
+      </g>
+      <g class="tick" transform="translate(472.5,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">21:00</text>
+      </g>
+      <g class="tick" transform="translate(540,0)" style="opacity: 1;">
+        <line y2="-110" x2="0"></line>
+        <text dy="-.3em" y="8" x="0" dx="-.8em" transform="rotate(-65)" style="text-anchor: end;">00:00</text>
+      </g>
+      <path class="domain" d="M0,0V0H540V0"></path>
+    </g>
+    <g class="y axis" transform="translate(0,0)">
+      <g class="tick" transform="translate(0,110)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">0</text>
+      </g>
+      <g class="tick" transform="translate(0,96.25)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">500</text>
+      </g>
+      <g class="tick" transform="translate(0,82.5)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">1,000</text>
+      </g>
+      <g class="tick" transform="translate(0,68.75)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">1,500</text>
+      </g>
+      <g class="tick" transform="translate(0,55)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">2,000</text>
+      </g>
+      <g class="tick" transform="translate(0,41.25)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">2,500</text>
+      </g>
+      <g class="tick" transform="translate(0,27.5)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">3,000</text>
+      </g>
+      <g class="tick" transform="translate(0,13.75)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">3,500</text>
+      </g>
+      <g class="tick" transform="translate(0,0)" style="opacity: 1;">
+        <line x2="540" y2="0"></line>
+        <text dy=".32em" x="-6" y="0" style="text-anchor: end;">4,000</text>
+      </g>
+      <path class="domain" d="M0,0H0V110H0"></path>
+    </g>
+    <path class="line" stroke="steelblue" stroke-width="2" fill="none" d={{pathDynData}}></path>
+    <g class="x axis" transform="translate(0,110)"></g>
+    <g class="y axis" transform="translate(0,0)"></g>
+  </g>
+</svg>
+</template>

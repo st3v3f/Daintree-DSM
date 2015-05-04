@@ -3,7 +3,8 @@ DashboardController = AppController.extend({
     return this.subscribe('items');
   },
   data: {
-    items: Items.find({})
+    items: Items.find({},{sort : {timestamp:-1}}), //Sort desc.
+    graphData: Items.find({},{sort : {timestamp:1}}) //Sort asc.
   },
   onAfterAction: function () {
     Meta.setTitle('Dashboard');

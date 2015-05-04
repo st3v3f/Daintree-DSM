@@ -4,6 +4,10 @@ Template.connectStatus.helpers({
     return Meteor.status().connected ? "Connected" : "Disconnected";
   },
 
+  connectedClass: function () {
+    return Meteor.status().connected ? "connected" : "disconnected";
+  },
+
   spin: function () {
     return Meteor.status().connected ? "" : "fa-spin";
   },
@@ -12,10 +16,4 @@ Template.connectStatus.helpers({
     return Meteor.status().connected ? "fa-exchange" : "fa-refresh";
   }
 
-});
-
-Template.connectStatus.events({
-  'click .connect-status': function (event) {
-    alert(JSON.stringify(Meteor.status()));
-  }
 });

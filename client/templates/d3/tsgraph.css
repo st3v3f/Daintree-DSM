@@ -1,0 +1,20 @@
+/* X and Y axis font.*/
+.axis text {
+    font: 0.7em sans-serif;
+}
+
+.x.axis text {
+    font: 0.5em sans-serif;
+}
+
+/* Axis line colour. */
+.axis path,
+.axis line {
+    stroke: black;
+}
+
+/* Grid colour.*/
+.axis .tick line {
+    stroke: lightgrey;
+    opacity: 0.7;
+}
