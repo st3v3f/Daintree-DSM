@@ -7,7 +7,7 @@ Meteor.startup(function() {
   }
 
   var todayZeroHours = new Date();
-  todayZeroHours.setHours(0,0,0,0);
+  todayZeroHours.setUTCHours(0,0,0,0); // Start of UTC day.
 
   var h1 = createLiveStream("s1",
     {minval:1,
@@ -16,7 +16,14 @@ Meteor.startup(function() {
       updateInterval:2000,
       maxDataPoints:100,
       startDateTime: todayZeroHours});
-  //var h2 = createLiveStream("s2",{minval:500,maxVal:2000,interval:3600000,updateInterval:1000, maxDataPoints:50});
+
+  var h2 = createLiveStream("s2",
+    {minval:100,
+      maxVal:200,
+      interval:15*60*1000,
+      updateInterval:1000,
+      maxDataPoints:100,
+      startDateTime: todayZeroHours});
 
 });
 

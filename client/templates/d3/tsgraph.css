@@ -1,11 +1,13 @@
 /* X and Y axis font.*/
+
 .axis text {
-    font: 0.7em sans-serif;
+    font-size: 0.7em;
 }
 
 .x.axis text {
-    font: 0.5em sans-serif;
+    font-size: 0.7em;
 }
+
 
 /* Axis line colour. */
 .axis path,
