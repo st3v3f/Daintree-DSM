@@ -1,5 +1,43 @@
 /* X and Y axis font.*/
 
+/* Nice Stephen Few Colours
+
+Light:
+8C8C8C (gray)
+88BDE6 (blue)
+FBB258 (orange)
+90CD97 (green)
+F6AAC9 (pink)
+BFA554 (brown)
+BC99C7 (purple)
+EDDD46 (yellow)
+F07E6E (red)
+
+Medium:
+4D4D4D (gray)
+5DA5DA (blue)
+FAA43A (orange)
+60BD68 (green)
+F17CB0 (pink)
+B2912F (brown)
+B276B2 (purple)
+DECF3F (yellow)
+F15854 (red)
+
+Dark and Bright:
+000000(gray)
+265DAB (blue)
+DF5C24 (orange)
+059748 (green)
+E5126F (pink)
+9D722A (brown)
+7B3A96 (purple)
+C7B42E (yellow)
+CB2027 (red)
+
+*/
+
+
 .axis text {
     font-size: 0.7em;
 }
@@ -8,15 +46,33 @@
     font-size: 0.7em;
 }
 
+/* Line colors - medium */
+.line{
+    stroke-width: 2;
+    fill: none;
+}
+.line-c1 {
+    stroke: #5DA5DA;
+}
+.line-c2 {
+    stroke: #FAA43A;
+}
+.line-c3 {
+    stroke: #60BD68;
+}
+.line-c4 {
+    stroke: #B276B2;
+}
+
 
 /* Axis line colour. */
 .axis path,
 .axis line {
-    stroke: black;
+    stroke: #000000;
 }
 
 /* Grid colour.*/
 .axis .tick line {
-    stroke: lightgrey;
+    stroke: #4D4D4D;
     opacity: 0.7;
 }

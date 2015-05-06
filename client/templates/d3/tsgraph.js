@@ -1,113 +1,254 @@
-Template.tsgraph.rendered = function() {
 
-  // Grab SVG width.
-  console.log("SVG Width = " + this.$('svg').width());
-  this.data.initialSVGWidth = this.$('svg').width();
+Template.tsgraph.onRendered( function() {
 
-  var svg = d3.select("#myD3");
-  this.data.svg = svg;
-};
+  console.log(this.data);
 
-Template.tsgraph.helpers({
-  pathData: function() {
-    return "M0,96.25Q18,56.375,22.5,55C29.25,52.9375,38.25,90.75,45,82.5S60.75,-2.0625000000000004,67.5,0S83.25,84.997,90,96.25S105.75,81.013625,112.5,75.02S128.25,60.72274999999999,135,56.29249999999999S150.75,47.233999999999995,157.5,45.485S173.25,39.216375000000006,180,44.63250000000001S195.75,81.3285,202.5,81.5925S218.25,50.03075,225,46.3925S240.75,53.294999999999995,247.5,57.3375S263.25,69.564,270,73.3425S285.75,77.033,292.5,82.5275S308.25,107.023125,315,109.9725S330.75,105.33325,337.5,102.19000000000001S342.00036,100.09436360000001,360,89.0175Q364.5,84.47449999999999,382.5,56.760000000000005";
-  },
+  var tData = this.data; // Template data context.
+  var opts = tData.opts || {};
 
-  pathDynData: function() {
-    return ""; //getData(Template.parentData().graphData,{width:600,height:250});
-  },
+  // Setup svg elements.
+  var selector = '#'+ this.data.divId;//FIXME - can we limit selection to template?
+  var container = d3.select(selector);
 
-  winWidth: function() {return (Session.get('winResize') && Session.get('winResize').width) || 0},
+  var defaults = {
+    width: parseInt(d3.select(selector).style('width'), 10),
+    height: 300,
+    margin: {top:40, right:20, bottom:20, left:50},
+    x: "timestamp",
+    y: "value",
+    maxY: 4000,
+    minY: 0,
+    domainHrs: 24,   // Period in hours to display.
+    showUtc: true // Local or Utc time display on graph.
+  };
 
-  hello: function() { return "hello"; },
+  // Add any missing fields to opts from defaults.
+  opts = _.defaults(opts, defaults);
 
-  svgWidth: function() { console.log(this);return this.initialSVGWidth;},
+  // Setup SVG element and margin compensation.
+  var svg = setupSVG(selector, opts.width, opts.height, opts.margin);
 
-  doUpdates: function(){ return doUpdates(this.svg);}
+  // Calculate actual graph area width and height.
+  var width  = opts.width - opts.margin.left - opts.margin.right;
+  var height = opts.height - opts.margin.top - opts.margin.bottom;
+
+  // Setup scales
+  // (yScale will need further adjusted on screen width change,
+  //  xScale needs further adjustment on data range maximum change.)
+  var xScale = tData.xScale = d3.time.scale();
+  var yScale = tData.yScale = d3.scale.linear();
+
+  setScales(tData, width, height, opts.maxY, opts.minY);
+
+  // Setup X and Y axes.
+  drawAxes(svg, width, height, xScale, yScale, opts.domainHrs, opts.showUtc);
+
+  // Setup path.
+  tData.path = createPath(svg);
+
+  // Setup Line function (converts data to SVG path string).
+  tData.lineFn = createLineFn(xScale, yScale, opts.x, opts.y);
+
+  console.log("tsgraph4 rendered.");
+
+  // Gets called when data set is changed..
+  this.autorun(function(){
+
+    // Stream Id
+    var streamId = tData.streamId;
+
+    // Get todays data.
+    var todayStart = new Date();
+    todayStart.setUTCHours(0,0,0,0);
+    var todayEnd= new Date();
+    todayEnd.setUTCHours(23,59,59,999);
+    var dataCurs =  Items.find({$and: [ {timestamp: {$gte: todayStart}},
+                                        {timestamp: {$lte: todayEnd}},
+                                        {streamId:  streamId}]},
+                               {sort: {timestamp:1}}) //Sort asc.
+    var lineData = dataCurs.fetch(); // Data array.
+
+    // Draw Path!
+    tData.path.transition().attr("d", tData.lineFn(lineData));
+  });
+
 });
 
-function doUpdates(svg){
+Template.tsgraph.helpers({
 
-  console.log(svg);
+});
 
-  var lineFn = getData(Template.parentData().graphData,{width:600,height:250});
+Template.tsgraph.events({
 
-  svg.select("path.line").transition().attr("d", lineFn);
-  return (new Date()).toISOString();
+});
+
+function createPath(svg) {
+  // Setup path for timeseries.
+  var path = svg.append("path").classed('line line-c1',true);
+
+  return path;
 }
 
+function createLineFn(xScale, yScale, _x, _y) {
+  var lineFn = d3.svg.line()
+    .x(function(d) { return  xScale(new Date(d[_x])); })
+    .y(function(d) { return  yScale(d[_y]); })
+    .interpolate("cardinal");
 
-function getData(data, options) {
+  return lineFn;
+}
 
-  lineData = data.map(function(item){return {timestamp: item.timestamp.toISOString(), val:item.value};});
+// drawAxes()
+function drawAxes(svg, width, height, xScale, yScale, domainHrs, showUtc){
+  drawXAxis(svg, height, xScale, domainHrs, showUtc);
+  drawXAxisLabel(svg, width, height, domainHrs, showUtc, "Hour");
+  drawYAxis(svg, width, yScale);
+  drawYAxisLabel(svg, width, height, domainHrs, showUtc, "Units");
+  drawGraphTitle(svg, width, height, domainHrs, showUtc, "Today's Data")
+}
 
-  /*var lineData = [{"timestamp": "2015-05-04T00:00:00.000Z", "val": 500},
-    {"timestamp": "2015-05-04T01:00:00.000Z", "val": 2000},
-    {"timestamp": "2015-05-04T02:00:00.000Z", "val": 1000},
-    {"timestamp": "2015-05-04T03:00:00.000Z", "val": 4000},
-    {"timestamp": "2015-05-04T04:00:00.000Z", "val": 500},
-    {"timestamp": "2015-05-04T05:00:00.000Z", "val": 4500}];
-*/
+function getXAxisTickFormat(domainHrs, showUtc){
+  var tf,
+      format;
 
-  var defaults={
-    width: 600,
-    height: 250,
-    margin: {top:80, right:20, bottom:60, left:40},
-    interpolation: "cardinal", //smoother.
-    responsive: false,
-    x: "timestamp",
-    y: "val"
-  };
+  if (1 >= domainHrs){
+    format = '%H:%M';
+  }
+  else if ((domainHrs > 1) && (domainHrs <= 24)){
+    format = '%H';
+  }
+  else {
+    format = '%Y-%m-%d %H:%M';
+  }
 
-  var _x = (options && options.x) || defaults.x;
-  var _y = (options && options.y) || defaults.y;
-  var _isResponsive = (options && options.responsive) || defaults.responsive;
-  var _options  = options;
+  if (showUtc) {
+    tf = d3.time.format.utc(format); // Utc display.
+  } else {
+    tf = d3.time.format(format); // Local time display.
+  }
+  return tf;
+}
 
-  var inputMargin = (options && options.margin);
-  var margin = {
-    top:    (inputMargin && inputMargin.top)    || defaults.margin.top,
-    right:  (inputMargin && inputMargin.right)  || defaults.margin.right,
-    bottom: (inputMargin && inputMargin.bottom) || defaults.margin.bottom,
-    left:   (inputMargin && inputMargin.left)   || defaults.margin.left
-  };
+function drawXAxisLabel(svg, width, height, domainHrs, showUtc, text) {
+  svg.append("text")
+    .attr("class", "x label")
+    .attr("text-anchor", "middle")
+    .attr("x", width/2)
+    .attr("y", height + 30)
+    .text(text || "Time");
+}
 
-  var containerWidth = (options && options.width) ||
-    //parseInt(d3.select(selector).style('width'), 10) ||
-    defaults.width;
+function drawYAxisLabel(svg, width, height, domainHrs, showUtc, text) {
+  svg.append("text")
+    .attr("class", "y label")
+    .attr("text-anchor", "end")
+    .attr("y", -20)
+    .attr("x", -7)
+    .attr("dy", ".75em")
+    //.attr("transform", "rotate(-90)")
+    .text(text || "Domain (Units)");
+}
 
-  var containerHeight = (options && options.height) || defaults.height;
+function drawGraphTitle(svg, width, height, domainHrs, showUtc, text) {
+  svg.append("text")
+    .attr("class", "y label")
+    .attr("text-anchor", "middle")
+    .attr("y", -20)
+    .attr("x", width/2)
+    .attr("dy", ".75em")
+    //.attr("transform", "rotate(-90)")
+    .text(text || "Domain (Units)");
+}
 
-  var width  = containerWidth - margin.left - margin.right;
-  var height = containerHeight - margin.top - margin.bottom;
+function drawXAxis(svg, height, xScale, domainHrs, showUtc) {
+  var xTickRotate = false;
+  var tickPeriod;
+  var tickFormat = getXAxisTickFormat(domainHrs, showUtc);
+  var tickTimeIntervalRange = showUtc ? d3.time.hour.utc.range : d3.time.hour;
 
 
+  // Create a group element for the x-axis.
+  var xAxisGroup = svg.append("g").attr("class", "x axis");
 
+  // Move the x-axis down to bottom of svg container.
+  xAxisGroup.attr("transform", "translate(0," + height + ")");
+
+  // For 7 days - show date every 24 hours (7 ticks)
+  // For 48 hrs - show hours every 4 hrs (12 ticks) domainHrs / 12
+  // For 24 hrs - show hours every 2 hrs (12 ticks) domainHrs / 12
+  // For 12 hrs - show hours every hr (12 ticks)    domainHrs / 12
+  // For 8 Hrs  - show hours every hr (8 ticks)     domainHrs / 8
+  // For 1 Hr   - show minutes every 5 minutes (12 ticks) domainHrs / 12
+  switch (domainHrs){
+    case 8:   // 8 hours
+      tickPeriod = 1;
+    case 168: // 7 days
+      tickPeriod = 24; // 1 tick per day.
+    default:
+      tickPeriod = domainHrs / 12;
+  }
+
+  // Create the x-axis.
+  var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .orient("bottom")         // Horizontal axis with ticks below.
+    .ticks(tickTimeIntervalRange, tickPeriod)
+    .tickFormat(tickFormat)  // Set tick time string format.
+    .tickSize(-height, 0)
+    .tickPadding(8);
+
+  // Add xAxis to SVG and style text.
+  var xAxisSvg = svg.select("g.x.axis").call(xAxis);
+
+  if (xTickRotate) {
+    xAxisSvg.selectAll("text")
+      .style("text-anchor", "end")
+      .attr("dx", "-.8em")
+      .attr("dy", "-.3em")
+      .attr("transform", function (d) {
+        return "rotate(-65)"
+      });
+  }
+}
+
+function drawYAxis(svg, width, yScale) {
+
+  // Create a group element for the y-axis.
+  var yAxisGroup = svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate(0,0)");
+
+  // Create y-axis.
+  var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .orient("left")
+    .tickSize(-width, 10, 0)
+    .tickPadding(6);
+
+  svg.select("g.y.axis").transition().call(yAxis);
+}
+
+function setScales(tData, width, height, maxY, minY) {
 
   // Create the Scale we will use for the xAxis - for now set to today 24hrs.
   var todayStart = new Date();
-  todayStart.setHours(0,0,0,0);
-  _xScale = d3.time.scale()
-    .domain([todayStart, d3.time.day.offset(todayStart,1)])
-    .range([0, width]);
+  todayStart.setUTCHours(0, 0, 0, 0); // For display of UTC day (not localtime) use .setHours() for LT.
+  tData.xScale.domain([todayStart, d3.time.day.offset(todayStart, 1)])
+              .range([0, width]);
 
-  // Reverse range fixes y-axis so that +ve direction is upwards.
-  _yScale = d3.scale.linear().range([height, 0]);
-  _yScale.domain([0, 4000]); // Static y-scale for now...
+// Reverse range fixes y-axis so that +ve direction is upwards.
+  tData.yScale.range([height, 0]);
+  tData.yScale.domain([minY, maxY]); // Static y-scale for now...
+}
 
-  // TODO FIXME: Dynamic y-scale based on data set - need to update axes as well though!!!
-  // Update yScale domain to cater for potentially increased y-axis range.
-  //_yScale.domain([0, d3.max(lineData, function(d) { return d[_y]; })]);
+function setupSVG(selector, containerWidth, containerHeight, margin) {
 
-  //This is the d3 path generator function.
-  var lineFunction = d3.svg.line()
-                           .x(function(d) { return  _xScale(new Date(d[_x])); })
-                           .y(function(d) { return  _yScale(d[_y]); })
-                           .interpolate("cardinal");
+  var svg = d3.select(selector).append("svg")
+    .attr("width", containerWidth + margin.left + margin.right)
+    .attr("height", containerHeight + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform",
+    "translate(" + margin.left + "," + margin.top + ")");
 
-  //var dString = lineFunction(lineData);
-
-  //return dString;
-
-  return lineFunction;
+  return svg; // Actually the translated 'g' element.
 }
