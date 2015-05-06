@@ -1,31 +1,59 @@
 Meteor.startup(function() {
 
   // Dev only clear items on startup
-  if (Items.find({}).count() > 0) {
-    console.log("Deleting all items");
-    Items.remove({});
-  }
+  clearExisting();
+
+  // createFakeStreams
+  createFakeStreams();
+});
+
+
+function createFakeStreams(){
 
   var todayZeroHours = new Date();
   todayZeroHours.setUTCHours(0,0,0,0); // Start of UTC day.
 
   var h1 = createLiveStream("s1",
-    {minval:1,
+    {minVal:1,
       maxVal:4000,
       interval:15*60*1000,
       updateInterval:2000,
-      maxDataPoints:100,
+      maxDataPoints:96,
       startDateTime: todayZeroHours});
 
   var h2 = createLiveStream("s2",
-    {minval:100,
-      maxVal:200,
+    {minVal:1100,
+      maxVal:1200,
       interval:15*60*1000,
       updateInterval:1000,
-      maxDataPoints:100,
+      maxDataPoints:96,
       startDateTime: todayZeroHours});
 
-});
+  var h3 = createLiveStream("s3",
+    {minVal:1700,
+      maxVal:2000,
+      interval:15*60*1000,
+      updateInterval:3000,
+      maxDataPoints:96,
+      startDateTime: todayZeroHours});
+
+  var h4 = createLiveStream("s4",
+    {minVal:3100,
+      maxVal:3200,
+      interval:15*60*1000,
+      updateInterval:500,
+      maxDataPoints:96,
+      startDateTime: todayZeroHours});
+
+};
+
+
+var clearExisting = function(){
+  if (Items.find({}).count() > 0) {
+    console.log("Deleting all items");
+    Items.remove({});
+  }
+}
 
 // Create live fake stream
 var createLiveStream = function(streamName, options){
@@ -50,12 +78,14 @@ var createLiveStream = function(streamName, options){
 
   // Insert items at predefined interval.
   var intervalHandle = Meteor.setInterval(function(){
-    if (Items.find({}).count() < (opts.maxDataPoints || 500)) {
-      console.log("Creating item.");
+    var count = Items.find({streamId: streamName}).count();
+
+    if (count < (opts.maxDataPoints || 500)) {
+      console.log("Creating item for <%s>. <%d>",streamName,count);
       Factory.create(streamName);
     }
     else {
-      console.log("Clearing insert interval.");
+      console.log("Clearing insert interval for <%s>.", streamName);
       Meteor.clearInterval(intervalHandle);
     }
   }, opts.updateInterval);

@@ -1,59 +1,76 @@
 
+// Hook up session parameter to capture screen resize events.
+Meteor.startup(function() {
+
+  // Set a session variable on window resize - to allow redraw of svg graphs.
+  $(window).resize(function(evt) {
+    Session.set("winResize", {
+      width: $(window).width(),
+      height: $(window).height()
+    });
+  });
+
+});
+
+
 Template.tsgraph.onRendered( function() {
 
-  console.log(this.data);
+  var tData = this.data;       // Template data context.
+  var opts = tData.opts || {}; // Allow options to be passed in via data context.
 
-  var tData = this.data; // Template data context.
-  var opts = tData.opts || {};
+  // Get streamId(s) to be displayed on this graph - split on spaces.
+  tData.streamIdsArr = tData.streamId.split(" ");
 
-  // Setup svg elements.
-  var selector = '#'+ this.data.divId;//FIXME - can we limit selection to template?
-  var container = d3.select(selector);
+  // Get outer div container.
+  var container = d3.select(this.firstNode); // Template div.
 
+  // Default settings.
   var defaults = {
-    width: parseInt(d3.select(selector).style('width'), 10),
+    width: parseInt(container.style('width'), 10),
     height: 300,
-    margin: {top:40, right:20, bottom:20, left:50},
+    margin: {top:40, right:20, bottom:40, left:50},
     x: "timestamp",
     y: "value",
     maxY: 4000,
     minY: 0,
     domainHrs: 24,   // Period in hours to display.
-    showUtc: true // Local or Utc time display on graph.
+    showUtc: true, // Local or Utc time display on graph.
+    display: {xAxis: true,
+              yAxis: true,
+              title:"Today's data for " + tData.streamId,
+              xLabel:"Hour",
+              yLabel:"Units"}
   };
 
   // Add any missing fields to opts from defaults.
   opts = _.defaults(opts, defaults);
 
-  // Setup SVG element and margin compensation.
-  var svg = setupSVG(selector, opts.width, opts.height, opts.margin);
+  // Setup outer SVG element and margin compensation.
+  var svg = setupSVG(container, opts.width, opts.height, opts.margin);
 
   // Calculate actual graph area width and height.
   var width  = opts.width - opts.margin.left - opts.margin.right;
   var height = opts.height - opts.margin.top - opts.margin.bottom;
 
-  // Setup scales
-  // (yScale will need further adjusted on screen width change,
-  //  xScale needs further adjustment on data range maximum change.)
+  // Setup X and Y scales.
   var xScale = tData.xScale = d3.time.scale();
   var yScale = tData.yScale = d3.scale.linear();
-
   setScales(tData, width, height, opts.maxY, opts.minY);
 
-  // Setup X and Y axes.
-  drawAxes(svg, width, height, xScale, yScale, opts.domainHrs, opts.showUtc);
+  // Create X and Y axes.
+  drawAxes(svg, width, height, xScale, yScale, opts.domainHrs, opts.showUtc, opts.display);
 
-  // Setup path.
-  tData.path = createPath(svg);
+  // Setup line path(s), one for eah stream we want to display.
+  tData.paths = {};
+  _.each(tData.streamIdsArr, function(el, index, list) {
+    tData.paths[el] = createPath(svg, index);
+  });
 
   // Setup Line function (converts data to SVG path string).
   tData.lineFn = createLineFn(xScale, yScale, opts.x, opts.y);
 
-  console.log("tsgraph4 rendered.");
-
-  // Gets called when data set is changed..
+  // Watch for data changes so we can redraw paths on a data update.
   this.autorun(function(){
-
     // Stream Id
     var streamId = tData.streamId;
 
@@ -62,14 +79,47 @@ Template.tsgraph.onRendered( function() {
     todayStart.setUTCHours(0,0,0,0);
     var todayEnd= new Date();
     todayEnd.setUTCHours(23,59,59,999);
-    var dataCurs =  Items.find({$and: [ {timestamp: {$gte: todayStart}},
-                                        {timestamp: {$lte: todayEnd}},
-                                        {streamId:  streamId}]},
-                               {sort: {timestamp:1}}) //Sort asc.
-    var lineData = dataCurs.fetch(); // Data array.
+    var dataCurs =  Items.find(
+        {$and: [ {timestamp: {$gte: todayStart}},
+                 {timestamp: {$lte: todayEnd}},
+                 {streamId:  {$in: tData.streamIdsArr}}]
+        },
+        {sort: {timestamp:1}}) //Sort asc.
+    tData.allLineData = dataCurs.fetch(); // Data array.
 
-    // Draw Path!
-    tData.path.transition().attr("d", tData.lineFn(lineData));
+    // Draw Path(s)!
+    _.each(tData.streamIdsArr, function(el, index, list){
+      var lineData = _.where(tData.allLineData, {streamId: el});
+      tData.paths[el].transition().attr("d", tData.lineFn(lineData));
+    })
+  });
+
+  // Watch for screen resize events - adjust graph width to fit new container size.
+  this.autorun(function(){
+    var resize = Session.get("winResize"); // Triggers the autorun.
+
+    var containerWidth  = parseInt(container.style('width'), 10);
+
+    // Set SVG element width and height.
+    var svgEl = container.select('svg');
+    setSVGSize(svgEl, containerWidth, opts.height, opts.margin);
+
+    // Calculate actual graph area width and height.
+    var width  = containerWidth  - opts.margin.left - opts.margin.right;
+    var height = opts.height - opts.margin.top - opts.margin.bottom;
+
+    // Update x and y scales.
+    setScales(tData, width, height, opts.maxY, opts.minY);
+
+    // Update Axes labels and title.
+    drawAxes(svg, width, height, xScale, yScale, opts.domainHrs, opts.showUtc, opts.display);
+
+    // Redraw paths
+    _.each(tData.streamIdsArr, function(el, index, list){
+      var lineData = _.where(tData.allLineData, {streamId: el});
+      tData.paths[el].transition().attr("d", tData.lineFn(lineData));
+    });
+
   });
 
 });
@@ -82,9 +132,10 @@ Template.tsgraph.events({
 
 });
 
-function createPath(svg) {
+function createPath(svg, index) {
+  colorClass = "line-c" + index;
   // Setup path for timeseries.
-  var path = svg.append("path").classed('line line-c1',true);
+  var path = svg.append("path").classed('line ' + colorClass, true);
 
   return path;
 }
@@ -99,12 +150,18 @@ function createLineFn(xScale, yScale, _x, _y) {
 }
 
 // drawAxes()
-function drawAxes(svg, width, height, xScale, yScale, domainHrs, showUtc){
-  drawXAxis(svg, height, xScale, domainHrs, showUtc);
-  drawXAxisLabel(svg, width, height, domainHrs, showUtc, "Hour");
-  drawYAxis(svg, width, yScale);
-  drawYAxisLabel(svg, width, height, domainHrs, showUtc, "Units");
-  drawGraphTitle(svg, width, height, domainHrs, showUtc, "Today's Data")
+function drawAxes(svg, width, height, xScale, yScale, domainHrs, showUtc, display) {
+  if (display.xAxis) {
+    drawXAxis(svg, height, xScale, domainHrs, showUtc);
+    drawXAxisLabel(svg, width, height, "Hour");
+  }
+  if (display.yAxis) {
+    drawYAxis(svg, width, yScale);
+    drawYAxisLabel(svg, "Units");
+  }
+  if ((typeof display.title === "string") && (0 < display.title.length)) {
+    drawGraphTitle(svg, width, display.title);
+  }
 }
 
 function getXAxisTickFormat(domainHrs, showUtc){
@@ -129,32 +186,40 @@ function getXAxisTickFormat(domainHrs, showUtc){
   return tf;
 }
 
-function drawXAxisLabel(svg, width, height, domainHrs, showUtc, text) {
-  svg.append("text")
-    .attr("class", "x label")
-    .attr("text-anchor", "middle")
-    .attr("x", width/2)
-    .attr("y", height + 30)
-    .text(text || "Time");
+function drawXAxisLabel(svg, width, height, text) {
+  var xLabel = svg.select("text.x.label");
+  if (xLabel.empty()) { // Doesn't exist yet so create element.
+    xLabel = svg.append("text")
+      .attr("class", "x label")
+      .attr("text-anchor", "end");// or "middle for centre.
+  }
+  xLabel.attr("x", width)        // or width/2 for centre
+        .attr("y", height + 30)
+        .text(text || "Time");
 }
 
-function drawYAxisLabel(svg, width, height, domainHrs, showUtc, text) {
-  svg.append("text")
-    .attr("class", "y label")
-    .attr("text-anchor", "end")
-    .attr("y", -20)
-    .attr("x", -7)
-    .attr("dy", ".75em")
-    //.attr("transform", "rotate(-90)")
-    .text(text || "Domain (Units)");
+function drawYAxisLabel(svg, text) {
+  var yLabel = svg.select("text.y.label");
+  if (yLabel.empty()) { // Doesn't exist yet so create element.
+    yLabel = svg.append("text")
+      .attr("class", "y label")
+      .attr("text-anchor", "end")
+      .attr("y", -20)
+      .attr("x", -7)
+      .attr("dy", ".75em");
+  }
+  yLabel.text(text || "Domain (Units)");
 }
 
-function drawGraphTitle(svg, width, height, domainHrs, showUtc, text) {
-  svg.append("text")
-    .attr("class", "y label")
-    .attr("text-anchor", "middle")
-    .attr("y", -20)
-    .attr("x", width/2)
+function drawGraphTitle(svg, width, text) {
+  var title = svg.select("text.title.label");
+  if (title.empty()){ // Doesn't exist yet so create element.
+    title = svg.append("text")
+      .attr("class", "title label")
+      .attr("text-anchor", "middle")
+      .attr("y", -20)
+  }
+  title.attr("x", width/2)
     .attr("dy", ".75em")
     //.attr("transform", "rotate(-90)")
     .text(text || "Domain (Units)");
@@ -236,19 +301,26 @@ function setScales(tData, width, height, maxY, minY) {
   tData.xScale.domain([todayStart, d3.time.day.offset(todayStart, 1)])
               .range([0, width]);
 
-// Reverse range fixes y-axis so that +ve direction is upwards.
+  // Reverse range fixes y-axis so that +ve direction is upwards.
   tData.yScale.range([height, 0]);
   tData.yScale.domain([minY, maxY]); // Static y-scale for now...
 }
 
-function setupSVG(selector, containerWidth, containerHeight, margin) {
+function setupSVG(container, containerWidth, containerHeight, margin) {
 
-  var svg = d3.select(selector).append("svg")
-    .attr("width", containerWidth + margin.left + margin.right)
-    .attr("height", containerHeight + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform",
-    "translate(" + margin.left + "," + margin.top + ")");
+  var svg = container.append("svg");
 
-  return svg; // Actually the translated 'g' element.
+  setSVGSize(svg, containerWidth, containerHeight, margin);
+
+  inner = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  return inner; // Actually the translated 'g' element.
 }
+
+function setSVGSize(svg, containerWidth, containerHeight, margin){
+    svg.attr("width", containerWidth)
+      .attr("height", containerHeight);
+}
+
+
