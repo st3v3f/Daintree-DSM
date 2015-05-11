@@ -38,38 +38,28 @@ CB2027 (red)
 */
 
 
-.axis text {
-    font-size: 0.7em;
-}
-
-.x.axis text {
-    font-size: 0.7em;
-}
+.axis text   { font-size: 0.7em; }
+.x.axis text { font-size: 0.7em; }
 
 /* Line colors - medium */
 .line{
     stroke-width: 2;
     fill: none;
+    transition: stroke 0.3s ease;
 }
-.line-c0 {
-    stroke: #5DA5DA;
-}
-.line-c1 {
-    stroke: #FAA43A;
-}
-.line-c2 {
-    stroke: #60BD68;
-}
-.line-c3 {
-    stroke: #B276B2;
-}
+.line-c0 {stroke: #5DA5DA;}
+.line-c0:hover {stroke: #265DAB;}
+.line-c1 {stroke: #FAA43A;}
+.line-c1:hover {stroke: #DF5C24;}
+.line-c2 {stroke: #60BD68;}
+.line-c2:hover {stroke: #059748;}
+.line-c3 {stroke: #B276B2;}
+.line-c3:hover {stroke: #7B3A96;}
 
 
 /* Axis line colour. */
 .axis path,
-.axis line {
-    stroke: #000000;
-}
+.axis line {stroke: #000000;}
 
 /* Grid colour.*/
 .axis .tick line {
